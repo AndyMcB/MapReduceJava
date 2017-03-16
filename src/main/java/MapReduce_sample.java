@@ -9,19 +9,7 @@ public class MapReduce_sample {
 
     public static void main(String[] args) {
 
-        // the problem:
 
-        //1: The program takes a list of text files to be processed.
-        // The file list can be passed to the program via the command line. Use a number of big text or log files for testing your program.
-
-        //2: Using Approach 3 (multithreaded) in the attached source code modify the given Map Reduce algorithm to build an output data
-        // structure that shows how many words in each file begin with each letter of the alphabet
-        // e.g. A => (file1.txt, = 2067, file2.txt = 180, ...), B => (file1.txt = 1234, file2.txt = 235, ...) etc
-        // then print out the results. The results can also be written out to a file for later analysis etc.
-
-        //3: Modify the main part of the program to assign the Map or Reduce functions to a Thread Pool with a configurable number of threads.
-        // Lookup the Java concurrency utilities for examples of using Thread Pools. The actual number of threads can be passed to the program
-        // as a command line parameter.
 
         // from here (INPUT)
 
@@ -46,9 +34,9 @@ public class MapReduce_sample {
         // together with the number of occurrences of that word
         // without any sorting
 
-        ////////////
-        // INPUT:
-        ///////////
+         ////////////
+        // INPUT: //
+       ////////////
 
         Map<String, String> input = new HashMap<String, String>();
         input.put("file1.txt", "foo foo bar cat dog dog");
