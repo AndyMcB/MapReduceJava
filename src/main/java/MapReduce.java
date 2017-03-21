@@ -1,6 +1,8 @@
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by AMCBR on 14/03/2017.
@@ -24,18 +26,42 @@ public class MapReduce {
     final static HashMap<String, String> fileContentsMap = new HashMap<>();
     final static Map<String, Map<String, Integer>> output = new HashMap<String, Map<String, Integer>>();
     static ExecutorService executor = null;
+    static Logger log = Logger.getLogger(MapReduce.class.getName());
 
 
     public static void main(String args[]) throws InterruptedException {
+        log.setLevel(Level.INFO);
+        log.info("Starting...");
+
+        if (args.length < 2){
+             log.severe("Error: Incorrect number of args," +
+                     "\n\tUsage: java -jar ct414-1.0-SNAPSHOT <path to text files> <No. of threads (Default=2)>");
+
+            System.exit(1);
+        }
+
+        log.info("Num args: " + args.length);
+
+        ArrayList<String> file_paths = new ArrayList<>();
+        int numThreads = 2; //Default number of threads will be two if not set
+        for(int i=0; i<args.length; i++){
+            try{
+               numThreads = Integer.parseInt(args[i]);
+            }catch(NumberFormatException e){ //Discard error. If the arg isnt a number it should be a file
+                file_paths.add(args[i]);
+            }
+        }
+
+        log.info("Num Files: " + file_paths.size());
+        log.info("Num Threads: " + numThreads);
 
         //Setup
-        MapReduce mr = new MapReduce(5);
-        mr.getFileContents("test1.txt");
-        mr.getFileContents("test2.txt");
-        mr.getFileContents("test3.txt");
-        mr.getFileContents("test4.txt");
+        log.info("Retrieving file contents\n Setting up threadpool ");
+        MapReduce mr = new MapReduce(numThreads);
+        file_paths.forEach(mr::getFileContents);
 
         //Map
+        log.info("Mapping file contents");
         final List<MappedItem> mappedItems = new LinkedList<>();
 
         final MapCallback<String, MappedItem> mapCallback = new MapCallback<String, MappedItem>() { //MapCallback implementation
@@ -60,6 +86,7 @@ public class MapReduce {
 
 
         //Group
+        log.info("Grouping contents");
         Map<String, List<String>> groupedItems = new HashMap<>();
 
         for ( MappedItem item : mappedItems) {
@@ -77,6 +104,7 @@ public class MapReduce {
 
 
         //Reduce
+        log.info("Reducing contents");
         final ReduceCallback<String, String, Integer> reduceCallback = new ReduceCallback<String, String, Integer>() { //ReduceCallback implementation
             @Override
             public synchronized void reduceDone(String k, Map<String, Integer> v) {
@@ -92,11 +120,16 @@ public class MapReduce {
             futures.add(executor.submit(()  -> reduce(letter, list, reduceCallback)));
         }
 
-
+        log.config("Terminating threadpool");
         executor.shutdown();
         executor.awaitTermination(60, TimeUnit.SECONDS);
 
-        System.out.println(output);
+        log.info("\n---------------------------------------------Output---------------------------------------------\n");
+        for ( Map.Entry<String, Map<String, Integer>> set : output.entrySet())
+            System.out.println(set.getKey() + " => " + set.getValue());
+
+        log.info("Outputting to file");
+        mr.outputToFile();
     }
 
 
@@ -150,6 +183,21 @@ public class MapReduce {
         }
 
         System.out.println(out);
+    }
+
+    /***
+     * Output program output to file
+     *
+     */
+    public void outputToFile(){
+
+        try (BufferedWriter br = new BufferedWriter(new FileWriter("output.txt"))) {
+
+            br.write("\r\n---------------------------------------------Output---------------------------------------------\r\n");
+            for (Map.Entry<String, Map<String, Integer>> set : output.entrySet())
+                br.write("\r\n"+set.getKey() + " => " + set.getValue());
+
+        }catch(IOException e){e.printStackTrace();}
     }
 
     /**
